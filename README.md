@@ -373,7 +373,7 @@ coffee-shop-sales-analytics/
 ├── sql/
 │   └── coffee_shop_analysis.sql
 ├── powerquery/
-│   └── data_transformation.m
+│   └── data_transformation.pq
 ├── dax/
 │   └── business_measures.dax
 ├── images/
