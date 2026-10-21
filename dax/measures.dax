@@ -1,0 +1,80 @@
+// ==========================================
+// DAX Measures for Coffee Shop Sales Analysis
+// Author: Brice Abogo
+// ==========================================
+
+// --- Base Measures ---
+Total Sales = SUM(Transactions[Sales])
+
+Total Orders = DISTINCTCOUNT(Transactions[transaction_id])
+
+Total Qty Sold = SUM(Transactions[transaction_qty])
+
+Daily Avg Sales = AVERAGEX(ALLSELECTED(Transactions[transaction_date]), [Total Sales])
+
+// --- Date Table Calculated Columns ---
+// Note: Create these in the 'Date Table'
+// Month = FORMAT('Date Table'[Date], "mmm")
+// Month Number = MONTH('Date Table'[Date])
+// Day Name = FORMAT('Date Table'[Date], "DDD")
+// Weekday/Weekend = IF(OR('Date Table'[Day Name] = "Sat", 'Date Table'[Day Name] = "Sun"), "Weekend", "Weekday")
+
+// --- Time Intelligence (Current Month) ---
+CM Sales = 
+VAR selected_month = SELECTEDVALUE('Date Table'[Month Number])
+RETURN
+CALCULATE([Total Sales], 'Date Table'[Month Number] = selected_month)
+
+CM Orders = 
+VAR selected_month = SELECTEDVALUE('Date Table'[Month Number])
+RETURN
+CALCULATE([Total Orders], 'Date Table'[Month Number] = selected_month)
+
+CM Qty Sold = 
+VAR selected_month = SELECTEDVALUE('Date Table'[Month Number])
+RETURN
+CALCULATE([Total Qty Sold], 'Date Table'[Month Number] = selected_month)
+
+// --- Time Intelligence (Previous Month) ---
+PM Sales = CALCULATE([CM Sales], DATEADD('Date Table'[Date], -1, MONTH))
+PM Orders = CALCULATE([CM Orders], DATEADD('Date Table'[Date], -1, MONTH))
+PM Qty Sold = CALCULATE([CM Qty Sold], DATEADD('Date Table'[Date], -1, MONTH))
+
+// --- MoM Growth Calculations ---
+MoM Growth Sales = 
+VAR mom_diff = [CM Sales] - [PM Sales]
+VAR mom_growth = DIVIDE(mom_diff, [PM Sales])
+VAR g_sign = IF(mom_diff > 0, "+", "")
+VAR s_trend = IF(mom_diff > 0, "▲", "▼")
+RETURN
+s_trend & " " & g_sign & FORMAT(mom_growth, "0.0%") & " | " & g_sign & FORMAT(mom_diff/1000, "0.0K") & " vs LM"
+
+MoM Growth Orders = 
+VAR mom_diff = [CM Orders] - [PM Orders]
+VAR mom_growth = DIVIDE(mom_diff, [PM Orders])
+VAR g_sign = IF(mom_diff > 0, "+", "")
+VAR s_trend = IF(mom_diff > 0, "▲", "▼")
+RETURN
+s_trend & " " & g_sign & FORMAT(mom_growth, "0.0%") & " | " & g_sign & FORMAT(mom_diff/1000, "0.0K") & " vs LM"
+
+MoM Growth Qty Sold = 
+VAR mom_diff = [CM Qty Sold] - [PM Qty Sold]
+VAR mom_growth = DIVIDE(mom_diff, [PM Qty Sold])
+VAR g_sign = IF(mom_diff > 0, "+", "")
+VAR s_trend = IF(mom_diff > 0, "▲", "▼")
+RETURN
+s_trend & " " & g_sign & FORMAT(mom_growth, "0.0%") & " | " & g_sign & FORMAT(mom_diff/1000, "0.0K") & " vs LM"
+
+// --- Formatting Labels ---
+Label for hours = "Hour N° " & FORMAT(AVERAGE(Transactions[Hour]), 0)
+
+Label for Product = 
+SELECTEDVALUE(Transactions[product_category]) & " | " & FORMAT([Total Sales]/1000, "$0.00K")
+
+Label for Product Type = 
+SELECTEDVALUE(Transactions[product_type]) & " | " & FORMAT([Total Sales]/1000, "$0.00K")
+
+Label for Store Location = 
+SELECTEDVALUE(Transactions[store_location]) & " | " & FORMAT([Total Sales]/1000, "$0.00K")
+
+Colour for Columns = IF([Total Sales] > [Daily Avg Sales], "Above Average", "Below Average")
